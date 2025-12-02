@@ -67,6 +67,7 @@ struct Engine {
         idIndex.erase(id);
 
         // 3. Removing the record from lastIndex
+        // Need to account for if the record is part of a list already or not
         string lastName = toLower(heap[recordID].last);
         vector<int> *records = lastIndex.find(lastName);
         if(records)
@@ -85,7 +86,29 @@ struct Engine {
     // Returns a pointer to the record, or nullptr if not found.
     // Outputs the number of comparisons made in the search.
     const Record *findById(int id, int &cmpOut) {
-        //TODO   
+        // Zeroing out the comparisons value in idIndex
+        cmpOut = 0;
+        idIndex.resetMetrics();
+
+        // Finding the record via the key 'id' inside idIndex
+        // Setting cmpOut to the number of comparisons tracked inside idIndex
+        int *idPtr = idIndex.find(id);
+        cmpOut = idIndex.comparisons;
+
+        // Case if the record doesn't exist inside idIndex
+        if(!idPtr) {
+            return nullptr;
+        }
+
+        // Case if the record does exist but was soft-deleted in the heap
+        const Record &record = heap[*idPtr];
+        if(record.deleted) {
+            return nullptr;
+        }
+
+        // Otherwise, record has been found
+        return &record;
+
     }
 
     // Returns all records with ID in the range [lo, hi].
