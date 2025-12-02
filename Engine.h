@@ -114,7 +114,25 @@ struct Engine {
     // Returns all records with ID in the range [lo, hi].
     // Also reports the number of key comparisons performed.
     vector<const Record *> rangeById(int lo, int hi, int &cmpOut) {
-        //TODO
+        // Zeroing out the comparison values in idIndex
+        cmpOut = 0;
+        idIndex.resetMetrics();
+
+        // Create a vector that will store the addresses of each record
+        vector<const Record *> recordsInRange;
+        
+        // Using lambda function to add each node in the range IF the record hasn't been soft deleted
+        idIndex.rangeApply(lo, hi, 
+            [&](const int &key, const int &recordID) {
+                if(!heap[recordID].deleted) {
+                    recordsInRange.push_back(&heap[recordID]);
+                }
+            }
+        );
+
+        // Setting cmpOut to the number of comparisons tracked inside idIndex, and returning the records
+        cmpOut = idIndex.comparisons;
+        return recordsInRange;
     }
 
     // Returns all records whose last name begins with a given prefix.
