@@ -2,7 +2,8 @@
 #define ENGINE_H
 
 #include <iostream>   
-#include <vector>     
+#include <vector>
+#include <algorithm>     
 #include "BST.h"      
 #include "Record.h"
 //add header files as needed
@@ -53,7 +54,31 @@ struct Engine {
     // Deletes a record logically (marks as deleted and updates indexes)
     // Returns true if deletion succeeded.
     bool deleteById(int id) {
-        //TODO
+        int *recordIDptr = idIndex.find(id);
+        if(!recordIDptr) {
+            return false;
+        }
+
+        // 1. Soft deleting the record from the heap by setting deleted to true
+        int recordID = *recordIDptr;
+        heap[recordID].deleted = true;
+
+        // 2. Removing the record from idIndex
+        idIndex.erase(id);
+
+        // 3. Removing the record from lastIndex
+        string lastName = toLower(heap[recordID].last);
+        vector<int> *records = lastIndex.find(lastName);
+        if(records)
+        {
+            // Case if there are multiple records with the same last name already in the database
+            records->erase(remove(records->begin(), records->end(), recordID), records->end());
+
+            // Case if removing the record also removes the last instance of that last name in the database
+            if(records->empty()) {
+                lastIndex.erase(lastName);
+            }
+        }
     }
 
     // Finds a record by student ID.
