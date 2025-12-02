@@ -124,7 +124,7 @@ struct Engine {
         // Using lambda function to add each node in the range IF the record hasn't been soft deleted
         idIndex.rangeApply(lo, hi, 
             [&](const int &key, const int &recordID) {
-                if(!heap[recordID].deleted) {
+                if(recordID >= 0 && recordID < (int)heap.size() && !heap[recordID].deleted) {
                     recordsInRange.push_back(&heap[recordID]);
                 }
             }
@@ -138,7 +138,40 @@ struct Engine {
     // Returns all records whose last name begins with a given prefix.
     // Case-insensitive using lowercase comparison.
     vector<const Record *> prefixByLast(const string &prefix, int &cmpOut) {
-        //TODO
+        // Zeroing out the comparison values in lastIndex
+        cmpOut = 0;
+        lastIndex.resetMetrics();
+
+        // Turning the prefix lowercase and creating a vector to contain records with the prefix
+        vector<const Record *> recordsByLastName;
+        string lowerPrefix = toLower(prefix);
+
+        // Editing lambda function to go from a range of the prefix as the lower bound,
+        // and the ~ character as the upper bound (has an ASCII value greater than any alphabet letter),
+        // so that any last name greater than just the prefix will be included
+        lastIndex.rangeApply(lowerPrefix, "~", 
+            [&](const string &key, const vector<int> &recordIDs) {
+                
+                // Passes over the node if the lastName does not start with the given prefix
+                if(key.rfind(lowerPrefix, 0) != 0) {
+                    return;
+                }
+
+                // Case if the node lastName contains the prefix at the beginning,
+                // mirroring the lambda function from rangeById, except this one captures
+                // every record in the list in case there are multiple records with the same last name
+                for (int recordID : recordIDs) {
+                    if(recordID >= 0 && recordID < (int)(heap.size() && !heap[recordID].deleted)) {
+                        recordsByLastName.push_back(&heap[recordID]);
+                    }
+                }
+            }
+        );
+
+        // Setting cmpOut to the number of comparisons tracked inside idIndex, and returning the records
+        cmpOut = lastIndex.comparisons;
+        return recordsByLastName;
+
     }
 };
 
